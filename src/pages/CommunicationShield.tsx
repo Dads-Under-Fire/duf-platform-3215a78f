@@ -292,35 +292,28 @@ export default function CommunicationShield() {
 
     // ── Mobile Screen 1: Compose ──
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full overflow-hidden">
 
-        {/* Mode label + Start Over */}
-        <div className="flex items-center justify-between px-4 py-1.5 text-muted-foreground text-xs border-b border-border/50">
-          <span>{mode === "respond" ? "Response Mode" : "Rewrite Mode"}</span>
-          {step !== "input" && (
-            <button
-              onClick={handleStartOver}
-              className="flex items-center gap-1 text-primary text-xs hover:underline"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Start Over
-            </button>
-          )}
-        </div>
-
-        {/* Directions strip */}
-        <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground border-b border-border/50 shrink-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-medium text-foreground">Directions:</span>
-            <span>Paste a message</span>
-            <span className="text-primary">→</span>
-            <span>Choose how to respond</span>
-            <span className="text-primary">→</span>
-            <span>Copy the court-safe reply</span>
+        {/* Fixed: Response Mode bar with help icon */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-xs">{mode === "respond" ? "Response Mode" : "Rewrite Mode"}</span>
+            {step !== "input" && (
+              <button
+                onClick={handleStartOver}
+                className="flex items-center gap-1 text-primary text-xs hover:underline ml-2"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Start Over
+              </button>
+            )}
           </div>
+          <button className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground">
+            <Info className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Scrollable content area */}
+        {/* Scrollable: Original Message + intent options */}
         <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
           {/* Original Message panel */}
           <div>
@@ -418,8 +411,8 @@ export default function CommunicationShield() {
           )}
         </div>
 
-        {/* Sticky bottom controls */}
-        <div className="sticky bottom-0 border-t border-border bg-background px-4 py-3 space-y-3">
+        {/* Fixed bottom: Mode toggle + Input + Submit */}
+        <div className="border-t border-border bg-background px-4 py-3 space-y-3 shrink-0">
           {/* Mode toggle */}
           <div className="flex items-center gap-4">
             <button onClick={() => setMode("respond")} className="flex items-center gap-2">
