@@ -14,14 +14,14 @@ interface AIResult {
 export default function CommunicationShield() {
   const { user } = useAuth();
   const { profile, refetch: refetchProfile } = useProfile();
-  const [originalMessage, setOriginalMessage] = useState("");
+  const [submittedMessage, setSubmittedMessage] = useState("");
   const [mode, setMode] = useState<"respond" | "rewrite">("respond");
   const [inputMessage, setInputMessage] = useState("");
   const [result, setResult] = useState<AIResult | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
-    const messageToProcess = inputMessage.trim() || originalMessage.trim();
+  const handleSubmit = async (overrideMessage?: string) => {
+    const messageToProcess = overrideMessage ?? inputMessage.trim();
     if (!messageToProcess || !user) return;
 
     if ((profile?.message_rewrites_used ?? 0) >= (profile?.message_rewrites_limit ?? 250)) {
@@ -29,13 +29,17 @@ export default function CommunicationShield() {
       return;
     }
 
+    setSubmittedMessage(messageToProcess);
+    setInputMessage("");
+    setResult(null);
     setLoading(true);
+
     try {
       const { data, error } = await supabase.functions.invoke("rewrite-message", {
         body: {
           message: messageToProcess,
           mode,
-          original_context: mode === "respond" ? originalMessage.trim() : undefined,
+          original_context: mode === "respond" ? messageToProcess : undefined,
         },
       });
 
@@ -44,7 +48,6 @@ export default function CommunicationShield() {
       const aiResult: AIResult = data;
       setResult(aiResult);
 
-      // Save to DB
       await supabase.from("message_rewrites").insert({
         user_id: user.id,
         original_message: messageToProcess,
@@ -54,7 +57,6 @@ export default function CommunicationShield() {
         mode,
       });
 
-      // Increment usage
       await supabase
         .from("profiles")
         .update({ message_rewrites_used: (profile?.message_rewrites_used ?? 0) + 1 })
@@ -75,6 +77,8 @@ export default function CommunicationShield() {
     }
   };
 
+  const hasResult = !!result;
+
   return (
     <div className="flex flex-col h-full">
       {/* Mode label */}
@@ -84,22 +88,20 @@ export default function CommunicationShield() {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-auto">
-        {/* Left panel - Original Message */}
+        {/* Left panel - Original Message (read-only display) */}
         <div className="flex-1 p-4 lg:p-6 flex flex-col lg:border-r border-border">
           <div className="bg-card rounded-lg border border-border flex-1 flex flex-col p-5">
             <h2 className="text-lg font-semibold text-foreground mb-1">Original Message</h2>
             <div className="h-px bg-border mb-3" />
-            <p className="text-muted-foreground text-sm mb-4">
-              Paste the message you received below.
-              <br />
-              DUF will generate a neutral, court-safe response.
-            </p>
-            <textarea
-              value={originalMessage}
-              onChange={(e) => setOriginalMessage(e.target.value)}
-              placeholder="Paste the original message here..."
-              className="flex-1 bg-transparent text-foreground resize-none outline-none text-sm placeholder:text-muted-foreground min-h-[120px]"
-            />
+
+            {submittedMessage ? (
+              <p className="text-foreground text-sm whitespace-pre-wrap flex-1">{submittedMessage}</p>
+            ) : (
+              <div className="flex-1 text-muted-foreground text-sm space-y-1">
+                <p>Paste the message you received below.</p>
+                <p>DUF will generate a neutral, court-safe response.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -136,32 +138,50 @@ export default function CommunicationShield() {
                   </ul>
                 </div>
               </div>
-            ) : (
+            ) : loading ? (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-muted-foreground text-sm">
-                  {loading ? "Generating response..." : "Your court-safe response will appear here."}
-                </p>
+                <p className="text-muted-foreground text-sm">Generating response...</p>
+              </div>
+            ) : (
+              <div className="flex-1 text-muted-foreground text-sm space-y-4">
+                <div>
+                  <p>Suggested Response</p>
+                  <div className="h-px bg-border my-1" />
+                  <p>[ rewritten message ]</p>
+                </div>
+                <div>
+                  <p>Tone Assessment</p>
+                  <div className="h-px bg-border my-1" />
+                  <p>Neutral / De-escalated</p>
+                </div>
+                <div>
+                  <p>Risk Flags</p>
+                  <div className="h-px bg-border my-1" />
+                  <p>• Removed accusatory language</p>
+                  <p>• Avoided escalation triggers</p>
+                </div>
               </div>
             )}
 
-            {result && (
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-                <button
-                  onClick={() => { setResult(null); handleSubmit(); }}
-                  className="flex items-center gap-2 text-primary text-sm hover:underline"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Generate again
-                </button>
-                <button
-                  onClick={copyResult}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy Response
-                </button>
-              </div>
-            )}
+            {/* Action buttons - always visible, disabled until result */}
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+              <button
+                onClick={() => { if (submittedMessage) { setResult(null); handleSubmit(submittedMessage); } }}
+                disabled={!hasResult || loading}
+                className="flex items-center gap-2 text-primary text-sm hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Generate again
+              </button>
+              <button
+                onClick={copyResult}
+                disabled={!hasResult}
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Copy className="h-4 w-4" />
+                Copy Response
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -185,12 +205,12 @@ export default function CommunicationShield() {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            placeholder={mode === "respond" ? "Paste the message you want to rewrite..." : "Paste your message here..."}
+            placeholder={mode === "respond" ? "Paste the message you received..." : "Paste your message here..."}
             className="flex-1 bg-card border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
           />
           <button
-            onClick={handleSubmit}
-            disabled={loading}
+            onClick={() => handleSubmit()}
+            disabled={loading || !inputMessage.trim()}
             className="h-10 w-10 rounded-full bg-card border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
           >
             <ArrowUp className="h-5 w-5" />
