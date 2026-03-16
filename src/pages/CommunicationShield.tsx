@@ -57,14 +57,18 @@ export default function CommunicationShield() {
     setLoadingIntents(true);
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
       const { data, error } = await supabase.functions.invoke("suggest-intents", {
         body: { message: msg, mode },
       });
+      clearTimeout(timeout);
+
       if (error) throw error;
-      const options = data.options;
-      setIntentOptions(options?.length ? options : FALLBACK_INTENTS);
+      const options = Array.isArray(data?.options) ? data.options.filter((o: unknown) => typeof o === "string" && (o as string).trim()) : [];
+      setIntentOptions(options.length >= 2 ? options : FALLBACK_INTENTS);
     } catch {
-      toast({ title: "Error", description: "Failed to generate options. Using defaults.", variant: "destructive" });
       setIntentOptions(FALLBACK_INTENTS);
     } finally {
       setLoadingIntents(false);
