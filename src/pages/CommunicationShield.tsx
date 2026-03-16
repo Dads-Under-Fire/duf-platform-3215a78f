@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
-import { ArrowUp, Copy, RefreshCw, Check, MessageSquarePlus } from "lucide-react";
+import { ArrowUp, ArrowLeft, Copy, RefreshCw, Check, MessageSquarePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AIResult {
   primary_response: string;
@@ -27,6 +28,7 @@ export default function CommunicationShield() {
   const { user } = useAuth();
   const { profile, refetch: refetchProfile } = useProfile();
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
   const [submittedMessage, setSubmittedMessage] = useState("");
   const [mode, setMode] = useState<"respond" | "rewrite">("respond");
   const [inputMessage, setInputMessage] = useState("");
@@ -148,8 +150,240 @@ export default function CommunicationShield() {
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
+  const handleBackToCompose = () => {
+    setStep("select-intent");
+    setResult(null);
+    setLoading(false);
+  };
+
   const hasResult = !!result;
 
+  // ─── MOBILE: Two-screen sequential flow ───
+  if (isMobile) {
+    const showResultScreen = step === "result";
+
+    if (showResultScreen) {
+      // ── Mobile Screen 2: Court-Safe Response ──
+      return (
+        <div className="flex flex-col h-full">
+          {/* Header with back button */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+            <button
+              onClick={handleBackToCompose}
+              className="h-9 w-9 rounded-full border border-border flex items-center justify-center text-primary"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <h1 className="text-lg font-semibold text-foreground">Court-Safe Response</h1>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-auto px-4 py-5 space-y-4">
+            {/* Original message */}
+            <div>
+              <p className="text-muted-foreground text-sm font-medium mb-1">Original Message:</p>
+              <p className="text-foreground text-sm whitespace-pre-wrap">{submittedMessage}</p>
+            </div>
+
+            <div className="h-px bg-border" />
+
+            {/* Court-safe response */}
+            <div>
+              <p className="font-semibold text-foreground mb-1">Court-Safe Response:</p>
+              {result ? (
+                <p className="text-foreground text-sm whitespace-pre-wrap">{result.primary_response}</p>
+              ) : loading ? (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Generating response...
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Bottom action bar */}
+          <div className="border-t border-border px-4 py-3 flex items-center justify-between">
+            <button
+              onClick={handleRegenerate}
+              disabled={!hasResult || loading}
+              className="flex items-center gap-2 text-primary text-sm hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Generate again
+            </button>
+            <button
+              onClick={copyResult}
+              disabled={!hasResult}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Copy className="h-4 w-4" />
+              Copy Response
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Mobile Screen 1: Compose ──
+    return (
+      <div className="flex flex-col h-full">
+        {/* Credits bar */}
+        <div className="flex items-center justify-center gap-6 px-4 py-2 border-b border-border">
+          <div className="flex items-center gap-1.5">
+            <span className="text-primary font-bold">{profile?.message_rewrites_used ?? 0}</span>
+            <span className="text-muted-foreground text-sm">/ {profile?.message_rewrites_limit ?? 250}</span>
+            <span className="text-muted-foreground text-xs ml-1">Message Rewrites</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-primary font-bold">{profile?.evidence_analyses_used ?? 0}</span>
+            <span className="text-muted-foreground text-sm">/ {profile?.evidence_analyses_limit ?? 25}</span>
+            <span className="text-muted-foreground text-xs ml-1">Evidence Analyses</span>
+          </div>
+        </div>
+
+        {/* Mode label */}
+        <div className="text-center py-1.5 text-muted-foreground text-xs border-b border-border/50">
+          {mode === "respond" ? "Response Mode" : "Rewrite Mode"}
+        </div>
+
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
+          {/* Original Message panel */}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground mb-1">Original Message</h2>
+            <div className="h-px bg-border mb-3" />
+
+            {submittedMessage ? (
+              <div className="space-y-3">
+                <p className="text-foreground text-sm whitespace-pre-wrap">{submittedMessage}</p>
+                {communicationContext && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Response Intent</p>
+                    <p className="text-foreground text-sm">
+                      {intentOptions.includes(communicationContext)
+                        ? communicationContext
+                        : `Custom: "${communicationContext}"`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-sm space-y-1">
+                {mode === "respond" ? (
+                  <>
+                    <p>Paste the message you received below.</p>
+                    <p>DUF will generate a neutral, court-safe response.</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Paste the message you plan to send below.</p>
+                    <p>DUF will rewrite it to avoid conflict and reduce escalation.</p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Intent options - after message submitted */}
+          {step === "select-intent" && (
+            <div>
+              <p className="text-sm font-medium text-foreground mb-2">How would you like to respond?</p>
+              {loadingIntents ? (
+                <div className="flex items-center gap-2 px-4 py-3 bg-card rounded-md text-sm text-muted-foreground">
+                  <RefreshCw className="h-4 w-4 animate-spin shrink-0" />
+                  Generating suggested response options...
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {intentOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handleSelectIntent(option)}
+                      className="w-full text-left px-4 py-2.5 rounded-md text-sm transition-colors flex items-center gap-2 bg-card text-foreground hover:bg-secondary"
+                    >
+                      {option}
+                    </button>
+                  ))}
+
+                  {!showOtherInput && (
+                    <button
+                      onClick={() => setShowOtherInput(true)}
+                      className="w-full text-left px-4 py-2.5 rounded-md text-sm transition-colors flex items-center gap-2 bg-card text-foreground hover:bg-secondary"
+                    >
+                      <MessageSquarePlus className="h-4 w-4 shrink-0" />
+                      Other…
+                    </button>
+                  )}
+
+                  {showOtherInput && (
+                    <div className="mt-2 space-y-2">
+                      <label className="text-xs text-muted-foreground">What would you like to communicate?</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={otherText}
+                          onChange={(e) => setOtherText(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleOtherSubmit()}
+                          placeholder="e.g. Decline politely"
+                          className="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleOtherSubmit}
+                          disabled={!otherText.trim()}
+                          className="px-3 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+                        >
+                          Go
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Sticky bottom controls */}
+        <div className="sticky bottom-0 border-t border-border bg-background px-4 py-3 space-y-3">
+          {/* Mode toggle */}
+          <div className="flex items-center gap-4">
+            <button onClick={() => setMode("respond")} className="flex items-center gap-2">
+              <div className={`h-4 w-4 rounded-full border-2 ${mode === "respond" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
+              <span className="text-sm text-foreground">Respond to message</span>
+            </button>
+            <button onClick={() => setMode("rewrite")} className="flex items-center gap-2">
+              <div className={`h-4 w-4 rounded-full border-2 ${mode === "rewrite" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
+              <span className="text-sm text-foreground">Rewrite my message</span>
+            </button>
+          </div>
+
+          {/* Input bar */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmitMessage()}
+              ref={inputRef}
+              placeholder={mode === "respond" ? "Paste the message you received..." : "Paste your message here..."}
+              disabled={step !== "input"}
+              className="flex-1 bg-card border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
+            <button
+              onClick={handleSubmitMessage}
+              disabled={loading || !inputMessage.trim() || step !== "input"}
+              className="h-10 w-10 rounded-full bg-card border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+            >
+              <ArrowUp className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── DESKTOP: Side-by-side layout (unchanged) ───
   return (
     <div className="flex flex-col h-full">
       {/* Mode label + directions strip */}
@@ -157,7 +391,7 @@ export default function CommunicationShield() {
         <div className="text-center py-2 text-muted-foreground text-sm">
           {mode === "respond" ? "Response Mode" : "Rewrite Mode"}
         </div>
-        <div className="flex items-center justify-between px-4 lg:px-6 py-2 text-xs text-muted-foreground border-t border-border/50">
+        <div className="flex items-center justify-between px-6 py-2 text-xs text-muted-foreground border-t border-border/50">
           <div className="flex items-center gap-2">
             <span className="font-medium text-foreground">Directions:</span>
             <span>Paste a message</span>
@@ -179,9 +413,9 @@ export default function CommunicationShield() {
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-auto">
+      <div className="flex-1 flex flex-row gap-0 overflow-auto">
         {/* Left panel */}
-        <div className="flex-1 p-4 lg:p-6 flex flex-col lg:border-r border-border gap-4">
+        <div className="flex-1 p-6 flex flex-col border-r border-border gap-4">
           {/* Original Message */}
           <div className="bg-card rounded-lg border border-border flex-1 flex flex-col p-5">
             <h2 className="text-lg font-semibold text-foreground mb-1">Original Message</h2>
@@ -255,7 +489,6 @@ export default function CommunicationShield() {
                     );
                   })}
 
-                  {/* Other... option */}
                   {step === "select-intent" && !showOtherInput && (
                     <button
                       onClick={() => setShowOtherInput(true)}
@@ -266,7 +499,6 @@ export default function CommunicationShield() {
                     </button>
                   )}
 
-                  {/* Custom intent input */}
                   {showOtherInput && step === "select-intent" && (
                     <div className="mt-2 space-y-2">
                       <label className="text-xs text-muted-foreground">What would you like to communicate?</label>
@@ -296,13 +528,13 @@ export default function CommunicationShield() {
           )}
         </div>
 
-        {/* Arrow separator (desktop only) */}
-        <div className="hidden lg:flex items-center -mx-3 z-10">
+        {/* Arrow separator */}
+        <div className="flex items-center -mx-3 z-10">
           <div className="text-muted-foreground">→</div>
         </div>
 
         {/* Right panel - Court-Safe Response */}
-        <div className="flex-1 p-4 lg:p-6 flex flex-col">
+        <div className="flex-1 p-6 flex flex-col">
           <div className="bg-card rounded-lg border border-primary/30 flex-1 flex flex-col p-5">
             <h2 className="text-lg font-semibold text-primary mb-1">Court-Safe Response</h2>
             <div className="h-px bg-border mb-3" />
@@ -368,7 +600,7 @@ export default function CommunicationShield() {
       </div>
 
       {/* Bottom controls */}
-      <div className="border-t border-border px-4 lg:px-6 py-4 space-y-3">
+      <div className="border-t border-border px-6 py-4 space-y-3">
         <div className="flex items-center gap-4">
           <button onClick={() => setMode("respond")} className="flex items-center gap-2">
             <div className={`h-4 w-4 rounded-full border-2 ${mode === "respond" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
@@ -378,7 +610,6 @@ export default function CommunicationShield() {
             <div className={`h-4 w-4 rounded-full border-2 ${mode === "rewrite" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
             <span className="text-sm text-foreground">Rewrite my message</span>
           </button>
-
         </div>
 
         <div className="flex gap-2">
