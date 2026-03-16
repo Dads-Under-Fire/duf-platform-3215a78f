@@ -321,6 +321,18 @@ export default function CommunicationShield() {
           )}
         </div>
 
+        {/* Directions strip */}
+        <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground border-b border-border/50 shrink-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-medium text-foreground">Directions:</span>
+            <span>Paste a message</span>
+            <span className="text-primary">→</span>
+            <span>Choose how to respond</span>
+            <span className="text-primary">→</span>
+            <span>Copy the court-safe reply</span>
+          </div>
+        </div>
+
         {/* Scrollable content area */}
         <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
           {/* Original Message panel */}
