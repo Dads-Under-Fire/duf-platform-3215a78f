@@ -1,1 +1,4 @@
 project_id = "vilnvgoejvlfxccyodnj"
+
+[functions.rewrite-message]
+verify_jwt = false
