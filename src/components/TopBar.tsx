@@ -21,24 +21,42 @@ export function TopBar() {
 
         {/* Desktop: Credits */}
         <div className="hidden md:flex items-center gap-6">
-          <div className="flex items-center gap-1.5">
-            <span className="text-primary font-bold text-lg">
-              {profile?.message_rewrites_used ?? 0}
-            </span>
-            <span className="text-muted-foreground text-sm">
-              / {profile?.message_rewrites_limit ?? 250}
-            </span>
-            <span className="text-muted-foreground text-xs ml-1">Message Rewrites</span>
+          <div className="flex items-center gap-3">
+            <div className="space-y-0.5 min-w-[160px]">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-xs">Message Rewrites</span>
+                <span className="text-xs">
+                  <span className="text-primary font-bold">{profile?.message_rewrites_used ?? 0}</span>
+                  <span className="text-muted-foreground"> / {profile?.message_rewrites_limit ?? 250}</span>
+                </span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.min(((profile?.message_rewrites_used ?? 0) / (profile?.message_rewrites_limit ?? 250)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-primary font-bold text-lg">
-              {profile?.evidence_analyses_used ?? 0}
-            </span>
-            <span className="text-muted-foreground text-sm">
-              / {profile?.evidence_analyses_limit ?? 25}
-            </span>
-            <span className="text-muted-foreground text-xs ml-1">Evidence Analyses</span>
+
+          <div className="flex items-center gap-3">
+            <div className="space-y-0.5 min-w-[160px]">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-xs">Evidence Analyses</span>
+                <span className="text-xs">
+                  <span className="text-primary font-bold">{profile?.evidence_analyses_used ?? 0}</span>
+                  <span className="text-muted-foreground"> / {profile?.evidence_analyses_limit ?? 25}</span>
+                </span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.min(((profile?.evidence_analyses_used ?? 0) / (profile?.evidence_analyses_limit ?? 25)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
           </div>
+
           <button className="text-primary text-sm hover:underline hidden sm:block">
             Add more credits
           </button>

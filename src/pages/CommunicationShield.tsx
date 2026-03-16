@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { ArrowUp, ArrowLeft, Copy, RefreshCw, Check, MessageSquarePlus, Info } from "lucide-react";
+import { ArrowUp, ArrowLeft, Copy, RefreshCw, Check, MessageSquarePlus, Info, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -40,6 +40,7 @@ export default function CommunicationShield() {
   const [communicationContext, setCommunicationContext] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [otherText, setOtherText] = useState("");
+  const [showDirections, setShowDirections] = useState(false);
 
   const handleSubmitMessage = async () => {
     const msg = inputMessage.trim();
@@ -308,10 +309,26 @@ export default function CommunicationShield() {
               </button>
             )}
           </div>
-          <button className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground">
+          <button
+            onClick={() => setShowDirections((v) => !v)}
+            className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground"
+          >
             <Info className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Directions popup */}
+        {showDirections && (
+          <div className="mx-4 mt-2 p-3 rounded-md bg-card border border-border flex items-start gap-2 shrink-0">
+            <div className="flex-1 text-xs text-muted-foreground space-y-0.5">
+              <p className="font-medium text-foreground">Directions:</p>
+              <p>Paste a message <span className="text-primary">→</span> Choose how to respond <span className="text-primary">→</span> Copy the court-safe reply</p>
+            </div>
+            <button onClick={() => setShowDirections(false)} className="text-muted-foreground hover:text-foreground shrink-0">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {/* Scrollable: Original Message + intent options */}
         <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
