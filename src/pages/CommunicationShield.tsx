@@ -11,14 +11,7 @@ interface AIResult {
   risk_flags: string[];
 }
 
-const CONTEXT_OPTIONS = [
-  "Explain a delay",
-  "Confirm the plan",
-  "Say you cannot make it",
-  "Set a boundary",
-  "Ask for clarification",
-  "General neutral response",
-];
+type Step = "input" | "select-intent" | "result";
 
 export default function CommunicationShield() {
   const { user } = useAuth();
@@ -28,40 +21,64 @@ export default function CommunicationShield() {
   const [inputMessage, setInputMessage] = useState("");
   const [result, setResult] = useState<AIResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [communicationContext, setCommunicationContext] = useState("General neutral response");
+  const [step, setStep] = useState<Step>("input");
+  const [intentOptions, setIntentOptions] = useState<string[]>([]);
+  const [loadingIntents, setLoadingIntents] = useState(false);
+  const [communicationContext, setCommunicationContext] = useState("");
 
-  const handleSubmit = async (overrideMessage?: string) => {
-    const messageToProcess = overrideMessage ?? inputMessage.trim();
-    if (!messageToProcess || !user) return;
+  const handleSubmitMessage = async () => {
+    const msg = inputMessage.trim();
+    if (!msg || !user) return;
 
     if ((profile?.message_rewrites_used ?? 0) >= (profile?.message_rewrites_limit ?? 250)) {
       toast({ title: "Limit reached", description: "You've used all your message rewrites.", variant: "destructive" });
       return;
     }
 
-    setSubmittedMessage(messageToProcess);
+    setSubmittedMessage(msg);
     setInputMessage("");
+    setStep("select-intent");
     setResult(null);
+    setCommunicationContext("");
+    setLoadingIntents(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("suggest-intents", {
+        body: { message: msg, mode },
+      });
+      if (error) throw error;
+      setIntentOptions(data.options ?? []);
+    } catch (err: any) {
+      toast({ title: "Error", description: "Failed to generate options. Using defaults.", variant: "destructive" });
+      setIntentOptions(["Confirm the plan", "Set a boundary", "Ask for clarification", "General neutral response"]);
+    } finally {
+      setLoadingIntents(false);
+    }
+  };
+
+  const handleSelectIntent = async (option: string) => {
+    setCommunicationContext(option);
+    setStep("result");
     setLoading(true);
+    setResult(null);
 
     try {
       const { data, error } = await supabase.functions.invoke("rewrite-message", {
         body: {
-          message: messageToProcess,
+          message: submittedMessage,
           mode,
-          original_context: mode === "respond" ? messageToProcess : undefined,
-          communication_context: communicationContext,
+          original_context: mode === "respond" ? submittedMessage : undefined,
+          communication_context: option,
         },
       });
-
       if (error) throw error;
 
       const aiResult: AIResult = data;
       setResult(aiResult);
 
       await supabase.from("message_rewrites").insert({
-        user_id: user.id,
-        original_message: messageToProcess,
+        user_id: user!.id,
+        original_message: submittedMessage,
         rewritten_message: aiResult.rewritten_message,
         tone_assessment: aiResult.tone_assessment,
         risk_flags: aiResult.risk_flags,
@@ -71,7 +88,7 @@ export default function CommunicationShield() {
       await supabase
         .from("profiles")
         .update({ message_rewrites_used: (profile?.message_rewrites_used ?? 0) + 1 })
-        .eq("user_id", user.id);
+        .eq("user_id", user!.id);
 
       refetchProfile();
     } catch (err: any) {
@@ -81,11 +98,25 @@ export default function CommunicationShield() {
     }
   };
 
+  const handleRegenerate = () => {
+    if (communicationContext && submittedMessage) {
+      handleSelectIntent(communicationContext);
+    }
+  };
+
   const copyResult = () => {
     if (result?.rewritten_message) {
       navigator.clipboard.writeText(result.rewritten_message);
       toast({ title: "Copied", description: "Response copied to clipboard." });
     }
+  };
+
+  const handleStartOver = () => {
+    setStep("input");
+    setSubmittedMessage("");
+    setResult(null);
+    setCommunicationContext("");
+    setIntentOptions([]);
   };
 
   const hasResult = !!result;
@@ -99,14 +130,18 @@ export default function CommunicationShield() {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-auto">
-        {/* Left panel - Original Message + Context */}
+        {/* Left panel */}
         <div className="flex-1 p-4 lg:p-6 flex flex-col lg:border-r border-border gap-4">
+          {/* Original Message */}
           <div className="bg-card rounded-lg border border-border flex-1 flex flex-col p-5">
             <h2 className="text-lg font-semibold text-foreground mb-1">Original Message</h2>
             <div className="h-px bg-border mb-3" />
 
             {submittedMessage ? (
-              <p className="text-foreground text-sm whitespace-pre-wrap flex-1">{submittedMessage}</p>
+              <div className="flex-1">
+                <p className="text-muted-foreground text-xs mb-1">Message:</p>
+                <p className="text-foreground text-sm whitespace-pre-wrap">{submittedMessage}</p>
+              </div>
             ) : (
               <div className="flex-1 text-muted-foreground text-sm space-y-1">
                 {mode === "respond" ? (
@@ -124,29 +159,44 @@ export default function CommunicationShield() {
             )}
           </div>
 
-          {/* Communication Context */}
-          <div>
-            <p className="text-sm font-medium text-foreground mb-2">What would you like to communicate?</p>
-            <div className="space-y-1">
-              {CONTEXT_OPTIONS.map((option) => {
-                const isSelected = communicationContext === option;
-                return (
-                  <button
-                    key={option}
-                    onClick={() => setCommunicationContext(option)}
-                    className={`w-full text-left px-4 py-2.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-card text-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    {isSelected && <Check className="h-4 w-4 shrink-0" />}
-                    {option}
-                  </button>
-                );
-              })}
+          {/* Communication Context - only after message submitted */}
+          {step !== "input" && (
+            <div>
+              <p className="text-sm font-medium text-foreground mb-2">What would you like to communicate?</p>
+              {loadingIntents ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-10 bg-card rounded-md animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {intentOptions.map((option) => {
+                    const isSelected = communicationContext === option;
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          if (step === "select-intent") handleSelectIntent(option);
+                        }}
+                        disabled={step === "result"}
+                        className={`w-full text-left px-4 py-2.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : step === "result"
+                            ? "bg-card text-muted-foreground cursor-default"
+                            : "bg-card text-foreground hover:bg-secondary"
+                        }`}
+                      >
+                        {isSelected && <Check className="h-4 w-4 shrink-0" />}
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Arrow separator (desktop only) */}
@@ -210,7 +260,7 @@ export default function CommunicationShield() {
             {/* Action buttons */}
             <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
               <button
-                onClick={() => { if (submittedMessage) { setResult(null); handleSubmit(submittedMessage); } }}
+                onClick={handleRegenerate}
                 disabled={!hasResult || loading}
                 className="flex items-center gap-2 text-primary text-sm hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
               >
@@ -241,6 +291,15 @@ export default function CommunicationShield() {
             <div className={`h-4 w-4 rounded-full border-2 ${mode === "rewrite" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
             <span className="text-sm text-foreground">Rewrite my message</span>
           </button>
+
+          {step !== "input" && (
+            <button
+              onClick={handleStartOver}
+              className="ml-auto text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Start over
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -248,13 +307,14 @@ export default function CommunicationShield() {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmitMessage()}
             placeholder={mode === "respond" ? "Paste the message you received..." : "Paste your message here..."}
-            className="flex-1 bg-card border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+            disabled={step !== "input"}
+            className="flex-1 bg-card border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
           />
           <button
-            onClick={() => handleSubmit()}
-            disabled={loading || !inputMessage.trim()}
+            onClick={handleSubmitMessage}
+            disabled={loading || !inputMessage.trim() || step !== "input"}
             className="h-10 w-10 rounded-full bg-card border border-border flex items-center justify-center text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
           >
             <ArrowUp className="h-5 w-5" />
