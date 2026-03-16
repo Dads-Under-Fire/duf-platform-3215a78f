@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowUp, Copy, RefreshCw } from "lucide-react";
+import { ArrowUp, Copy, RefreshCw, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -11,6 +11,15 @@ interface AIResult {
   risk_flags: string[];
 }
 
+const CONTEXT_OPTIONS = [
+  "Explain a delay",
+  "Confirm the plan",
+  "Say you cannot make it",
+  "Set a boundary",
+  "Ask for clarification",
+  "General neutral response",
+];
+
 export default function CommunicationShield() {
   const { user } = useAuth();
   const { profile, refetch: refetchProfile } = useProfile();
@@ -19,6 +28,7 @@ export default function CommunicationShield() {
   const [inputMessage, setInputMessage] = useState("");
   const [result, setResult] = useState<AIResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [communicationContext, setCommunicationContext] = useState("General neutral response");
 
   const handleSubmit = async (overrideMessage?: string) => {
     const messageToProcess = overrideMessage ?? inputMessage.trim();
@@ -40,6 +50,7 @@ export default function CommunicationShield() {
           message: messageToProcess,
           mode,
           original_context: mode === "respond" ? messageToProcess : undefined,
+          communication_context: communicationContext,
         },
       });
 
@@ -88,8 +99,8 @@ export default function CommunicationShield() {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-auto">
-        {/* Left panel - Original Message (read-only display) */}
-        <div className="flex-1 p-4 lg:p-6 flex flex-col lg:border-r border-border">
+        {/* Left panel - Original Message + Context */}
+        <div className="flex-1 p-4 lg:p-6 flex flex-col lg:border-r border-border gap-4">
           <div className="bg-card rounded-lg border border-border flex-1 flex flex-col p-5">
             <h2 className="text-lg font-semibold text-foreground mb-1">Original Message</h2>
             <div className="h-px bg-border mb-3" />
@@ -98,10 +109,43 @@ export default function CommunicationShield() {
               <p className="text-foreground text-sm whitespace-pre-wrap flex-1">{submittedMessage}</p>
             ) : (
               <div className="flex-1 text-muted-foreground text-sm space-y-1">
-                <p>Paste the message you received below.</p>
-                <p>DUF will generate a neutral, court-safe response.</p>
+                {mode === "respond" ? (
+                  <>
+                    <p>Paste the message you received below.</p>
+                    <p>DUF will generate a neutral, court-safe response.</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Paste the message you plan to send below.</p>
+                    <p>DUF will rewrite it to avoid conflict and reduce escalation.</p>
+                  </>
+                )}
               </div>
             )}
+          </div>
+
+          {/* Communication Context */}
+          <div>
+            <p className="text-sm font-medium text-foreground mb-2">What would you like to communicate?</p>
+            <div className="space-y-1">
+              {CONTEXT_OPTIONS.map((option) => {
+                const isSelected = communicationContext === option;
+                return (
+                  <button
+                    key={option}
+                    onClick={() => setCommunicationContext(option)}
+                    className={`w-full text-left px-4 py-2.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {isSelected && <Check className="h-4 w-4 shrink-0" />}
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -163,7 +207,7 @@ export default function CommunicationShield() {
               </div>
             )}
 
-            {/* Action buttons - always visible, disabled until result */}
+            {/* Action buttons */}
             <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
               <button
                 onClick={() => { if (submittedMessage) { setResult(null); handleSubmit(submittedMessage); } }}

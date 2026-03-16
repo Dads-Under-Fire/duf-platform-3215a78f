@@ -12,9 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { message, mode, original_context } = await req.json();
+    const { message, mode, original_context, communication_context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const contextInstruction = communication_context
+      ? `\nThe user selected the following communication context: "${communication_context}". Tailor the response to match this intent while remaining neutral, factual, and court-safe.`
+      : "";
 
     const systemPrompt = `You are a custody communication specialist trained in court-admissible co-parent messaging.
 
@@ -30,6 +34,7 @@ All responses must:
 - Ignore inflammatory language from the other parent
 - De-escalate conflict
 - Sound appropriate for review by a judge or custody evaluator
+${contextInstruction}
 
 You MUST respond by calling the provided tool with your structured output. Always provide:
 - rewritten_message: The suggested court-safe message, concise and focused on logistics involving the child
