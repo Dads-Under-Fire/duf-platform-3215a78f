@@ -317,6 +317,19 @@ export default function CommunicationShield() {
           </button>
         </div>
 
+        {/* Directions popup */}
+        {showDirections && (
+          <div className="mx-4 mt-2 p-3 rounded-md bg-card border border-border flex items-start gap-2 shrink-0">
+            <div className="flex-1 text-xs text-muted-foreground space-y-0.5">
+              <p className="font-medium text-foreground">Directions:</p>
+              <p>Paste a message <span className="text-primary">→</span> Choose how to respond <span className="text-primary">→</span> Copy the court-safe reply</p>
+            </div>
+            <button onClick={() => setShowDirections(false)} className="text-muted-foreground hover:text-foreground shrink-0">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {/* Scrollable: Original Message + intent options */}
         <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
           {/* Original Message panel */}
