@@ -200,11 +200,12 @@ export default function CommunicationShield() {
             <h1 className="text-lg font-semibold text-foreground">Court-Safe Response</h1>
           </div>
 
-          {/* Fixed: Original message + intent */}
-          <div className="px-4 pt-4 pb-3 border-b border-border shrink-0 space-y-3">
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-auto px-4 py-4 space-y-5">
+            {/* Original message + intent */}
             <div>
               <p className="text-muted-foreground text-sm font-medium mb-1">Original Message:</p>
-              <p className="text-foreground text-sm whitespace-pre-wrap line-clamp-3">{submittedMessage}</p>
+              <p className="text-foreground text-sm whitespace-pre-wrap">{submittedMessage}</p>
             </div>
 
             {communicationContext && (
@@ -213,10 +214,9 @@ export default function CommunicationShield() {
                 <p className="text-foreground text-sm">{communicationContext}</p>
               </div>
             )}
-          </div>
 
-          {/* Scrollable: Court-safe response content only */}
-          <div className="flex-1 overflow-auto px-4 py-4 space-y-5">
+            <div className="h-px bg-border" />
+
             {loading ? (
               <div className="flex items-center gap-2 text-muted-foreground text-sm py-8 justify-center">
                 <RefreshCw className="h-4 w-4 animate-spin" />
