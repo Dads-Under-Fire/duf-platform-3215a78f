@@ -161,9 +161,21 @@ export default function CommunicationShield() {
             <div className="h-px bg-border mb-3" />
 
             {submittedMessage ? (
-              <div className="flex-1">
-                <p className="text-muted-foreground text-xs mb-1">Message:</p>
-                <p className="text-foreground text-sm whitespace-pre-wrap">{submittedMessage}</p>
+              <div className="flex-1 space-y-4">
+                <div>
+                  <p className="text-muted-foreground text-xs mb-1">Message:</p>
+                  <p className="text-foreground text-sm whitespace-pre-wrap">{submittedMessage}</p>
+                </div>
+                {communicationContext && (
+                  <div>
+                    <p className="text-muted-foreground text-xs mb-1">Response Intent</p>
+                    <p className="text-foreground text-sm">
+                      {intentOptions.includes(communicationContext)
+                        ? communicationContext
+                        : `Custom: "${communicationContext}"`}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex-1 text-muted-foreground text-sm space-y-1">
