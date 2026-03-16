@@ -88,6 +88,41 @@ export function AppSidebar() {
           {!collapsed && <span className="text-sm">Collapse</span>}
         </button>
 
+        {/* Usage section – mobile only */}
+        {isMobile && (
+          <div className="px-3 py-3 space-y-3">
+            <p className="text-sm font-medium text-sidebar-foreground">Usage</p>
+
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Message Rewrites</p>
+              <p className="text-xs">
+                <span className="text-primary font-bold">{profile?.message_rewrites_used ?? 0}</span>
+                <span className="text-muted-foreground"> / {profile?.message_rewrites_limit ?? 250} used</span>
+              </p>
+              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.min(((profile?.message_rewrites_used ?? 0) / (profile?.message_rewrites_limit ?? 250)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Evidence Analyses</p>
+              <p className="text-xs">
+                <span className="text-primary font-bold">{profile?.evidence_analyses_used ?? 0}</span>
+                <span className="text-muted-foreground"> / {profile?.evidence_analyses_limit ?? 25} used</span>
+              </p>
+              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.min(((profile?.evidence_analyses_used ?? 0) / (profile?.evidence_analyses_limit ?? 25)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <NavLink
           to="/account"
           className="flex items-center gap-3 px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent rounded-md"
