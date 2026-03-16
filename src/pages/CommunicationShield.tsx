@@ -392,7 +392,8 @@ export default function CommunicationShield() {
                           onChange={(e) => setOtherText(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && handleOtherSubmit()}
                           placeholder="e.g. Decline politely"
-                          className="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                          style={{ fontSize: "16px" }}
+                          className="flex-1 bg-background border border-border rounded-md px-3 py-2 text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
                           autoFocus
                         />
                         <button
