@@ -309,7 +309,10 @@ export default function CommunicationShield() {
               </button>
             )}
           </div>
-          <button className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground">
+          <button
+            onClick={() => setShowDirections((v) => !v)}
+            className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground"
+          >
             <Info className="h-4 w-4" />
           </button>
         </div>
