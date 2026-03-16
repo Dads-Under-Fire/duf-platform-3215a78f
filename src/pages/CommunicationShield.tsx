@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ArrowUp, Copy, RefreshCw, Check, MessageSquarePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +26,7 @@ const FALLBACK_INTENTS = [
 export default function CommunicationShield() {
   const { user } = useAuth();
   const { profile, refetch: refetchProfile } = useProfile();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [submittedMessage, setSubmittedMessage] = useState("");
   const [mode, setMode] = useState<"respond" | "rewrite">("respond");
   const [inputMessage, setInputMessage] = useState("");
@@ -144,15 +145,37 @@ export default function CommunicationShield() {
     setIntentOptions([]);
     setShowOtherInput(false);
     setOtherText("");
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const hasResult = !!result;
 
   return (
     <div className="flex flex-col h-full">
-      {/* Mode label */}
-      <div className="text-center py-2 text-muted-foreground text-sm border-b border-border">
-        {mode === "respond" ? "Response Mode" : "Rewrite Mode"}
+      {/* Mode label + directions strip */}
+      <div className="border-b border-border">
+        <div className="text-center py-2 text-muted-foreground text-sm">
+          {mode === "respond" ? "Response Mode" : "Rewrite Mode"}
+        </div>
+        <div className="flex items-center justify-between px-4 lg:px-6 py-2 text-xs text-muted-foreground border-t border-border/50">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">Directions:</span>
+            <span>Paste a message</span>
+            <span className="text-primary">→</span>
+            <span>Choose how to respond</span>
+            <span className="text-primary">→</span>
+            <span>Copy the court-safe reply</span>
+          </div>
+          {step !== "input" && (
+            <button
+              onClick={handleStartOver}
+              className="flex items-center gap-1.5 text-primary hover:underline text-xs"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Start Over
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main content area */}
@@ -356,14 +379,6 @@ export default function CommunicationShield() {
             <span className="text-sm text-foreground">Rewrite my message</span>
           </button>
 
-          {step !== "input" && (
-            <button
-              onClick={handleStartOver}
-              className="ml-auto text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Start over
-            </button>
-          )}
         </div>
 
         <div className="flex gap-2">
@@ -372,6 +387,7 @@ export default function CommunicationShield() {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSubmitMessage()}
+            ref={inputRef}
             placeholder={mode === "respond" ? "Paste the message you received..." : "Paste your message here..."}
             disabled={step !== "input"}
             className="flex-1 bg-card border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
