@@ -16,19 +16,25 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `You are a family court communication specialist. Your job is to help fathers communicate safely and effectively with a co-parent during custody disputes.
+    const systemPrompt = `You are a custody communication specialist trained in court-admissible co-parent messaging.
 
 ${mode === "respond"
   ? `The user received a message from the other parent. Generate a neutral, factual, court-safe RESPONSE to that message.${original_context ? ` The original message received was: "${original_context}"` : ""}`
   : "The user wants to REWRITE their own message so it is calmer, neutral, and court-safe."
 }
 
-You MUST respond by calling the provided tool with your structured output. Always provide:
-- rewritten_message: The suggested court-safe message
-- tone_assessment: A brief label like "Neutral / De-escalated" or "Professional / Factual"
-- risk_flags: An array of bullet points describing what was removed, changed, or improved (e.g., "Removed accusatory language", "Avoided escalation triggers", "Focused on logistics")
+All responses must:
+- Be neutral and factual
+- Avoid accusations, emotional language, sarcasm, and defensiveness
+- Focus on child logistics: schedules, health, school, or transportation
+- Ignore inflammatory language from the other parent
+- De-escalate conflict
+- Sound appropriate for review by a judge or custody evaluator
 
-Keep the rewritten message concise, respectful, and focused on facts and logistics. Never include emotional language, blame, or passive-aggressive tone.`;
+You MUST respond by calling the provided tool with your structured output. Always provide:
+- rewritten_message: The suggested court-safe message, concise and focused on logistics involving the child
+- tone_assessment: A brief label like "Neutral / De-escalated" or "Professional / Factual"
+- risk_flags: An array of bullet points describing what was removed, changed, or improved (e.g., "Removed accusatory language", "Ignored inflammatory bait", "Focused on child logistics")`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
