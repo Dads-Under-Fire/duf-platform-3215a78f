@@ -152,9 +152,30 @@ export default function CommunicationShield() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Mode label */}
-      <div className="text-center py-2 text-muted-foreground text-sm border-b border-border">
-        {mode === "respond" ? "Response Mode" : "Rewrite Mode"}
+      {/* Mode label + directions strip */}
+      <div className="border-b border-border">
+        <div className="text-center py-2 text-muted-foreground text-sm">
+          {mode === "respond" ? "Response Mode" : "Rewrite Mode"}
+        </div>
+        <div className="flex items-center justify-between px-4 lg:px-6 py-2 text-xs text-muted-foreground border-t border-border/50">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-foreground">Directions:</span>
+            <span>Paste a message</span>
+            <span className="text-primary">→</span>
+            <span>Choose how to respond</span>
+            <span className="text-primary">→</span>
+            <span>Copy the court-safe reply</span>
+          </div>
+          {step !== "input" && (
+            <button
+              onClick={handleStartOver}
+              className="flex items-center gap-1.5 text-primary hover:underline text-xs"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Start Over
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main content area */}
