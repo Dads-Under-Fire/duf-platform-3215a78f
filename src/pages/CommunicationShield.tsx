@@ -145,6 +145,7 @@ export default function CommunicationShield() {
     setIntentOptions([]);
     setShowOtherInput(false);
     setOtherText("");
+    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const hasResult = !!result;
