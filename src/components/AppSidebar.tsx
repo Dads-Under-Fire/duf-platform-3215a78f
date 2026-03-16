@@ -1,6 +1,8 @@
 import { User, LogOut, ChevronLeft, FileSearch } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -36,8 +38,10 @@ const navItems = [
 
 export function AppSidebar() {
   const { signOut } = useAuth();
+  const { profile } = useProfile();
   const { state, toggleSidebar } = useSidebar();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const collapsed = state === "collapsed";
 
   return (
@@ -83,6 +87,41 @@ export function AppSidebar() {
           <ChevronLeft className={`h-5 w-5 shrink-0 transition-transform ${collapsed ? "rotate-180" : ""}`} />
           {!collapsed && <span className="text-sm">Collapse</span>}
         </button>
+
+        {/* Usage section – mobile only */}
+        {isMobile && (
+          <div className="px-3 py-3 space-y-3">
+            <p className="text-sm font-medium text-sidebar-foreground">Usage</p>
+
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Message Rewrites</p>
+              <p className="text-xs">
+                <span className="text-primary font-bold">{profile?.message_rewrites_used ?? 0}</span>
+                <span className="text-muted-foreground"> / {profile?.message_rewrites_limit ?? 250} used</span>
+              </p>
+              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.min(((profile?.message_rewrites_used ?? 0) / (profile?.message_rewrites_limit ?? 250)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Evidence Analyses</p>
+              <p className="text-xs">
+                <span className="text-primary font-bold">{profile?.evidence_analyses_used ?? 0}</span>
+                <span className="text-muted-foreground"> / {profile?.evidence_analyses_limit ?? 25} used</span>
+              </p>
+              <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.min(((profile?.evidence_analyses_used ?? 0) / (profile?.evidence_analyses_limit ?? 25)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <NavLink
           to="/account"

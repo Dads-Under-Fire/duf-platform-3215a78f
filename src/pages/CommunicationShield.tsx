@@ -293,19 +293,6 @@ export default function CommunicationShield() {
     // ── Mobile Screen 1: Compose ──
     return (
       <div className="flex flex-col h-full">
-        {/* Credits bar */}
-        <div className="flex items-center justify-center gap-6 px-4 py-2 border-b border-border">
-          <div className="flex items-center gap-1.5">
-            <span className="text-primary font-bold">{profile?.message_rewrites_used ?? 0}</span>
-            <span className="text-muted-foreground text-sm">/ {profile?.message_rewrites_limit ?? 250}</span>
-            <span className="text-muted-foreground text-xs ml-1">Message Rewrites</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-primary font-bold">{profile?.evidence_analyses_used ?? 0}</span>
-            <span className="text-muted-foreground text-sm">/ {profile?.evidence_analyses_limit ?? 25}</span>
-            <span className="text-muted-foreground text-xs ml-1">Evidence Analyses</span>
-          </div>
-        </div>
 
         {/* Mode label + Start Over */}
         <div className="flex items-center justify-between px-4 py-1.5 text-muted-foreground text-xs border-b border-border/50">
