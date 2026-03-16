@@ -203,10 +203,9 @@ export default function CommunicationShield() {
             <div>
               <p className="text-sm font-medium text-foreground mb-2">How would you like to respond?</p>
               {loadingIntents ? (
-                <div className="space-y-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-10 bg-card rounded-md animate-pulse" />
-                  ))}
+                <div className="flex items-center gap-2 px-4 py-3 bg-card rounded-md text-sm text-muted-foreground">
+                  <RefreshCw className="h-4 w-4 animate-spin shrink-0" />
+                  Generating suggested response options...
                 </div>
               ) : (
                 <div className="space-y-1">
