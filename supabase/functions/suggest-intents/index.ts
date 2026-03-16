@@ -88,7 +88,26 @@ You MUST respond by calling the provided tool.`;
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) throw new Error("No tool call in AI response");
 
-    const result = JSON.parse(toolCall.function.arguments);
+    let result: unknown;
+    const rawArgs = toolCall.function.arguments;
+    try {
+      result = JSON.parse(rawArgs);
+    } catch {
+      // Attempt to recover truncated JSON array
+      const lastBrace = rawArgs.lastIndexOf("}");
+      if (lastBrace > 0) {
+        try {
+          result = JSON.parse(rawArgs.substring(0, lastBrace + 1) + "]");
+          console.warn("Recovered truncated JSON from tool call arguments");
+        } catch {
+          console.error("Cannot repair truncated JSON:", rawArgs);
+          result = { options: ["Set a boundary", "Ask for clarification", "Acknowledge without engaging", "General neutral response"] };
+        }
+      } else {
+        console.error("Cannot parse tool call arguments:", rawArgs);
+        result = { options: ["Set a boundary", "Ask for clarification", "Acknowledge without engaging", "General neutral response"] };
+      }
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
