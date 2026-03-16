@@ -387,6 +387,7 @@ export default function CommunicationShield() {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSubmitMessage()}
+            ref={inputRef}
             placeholder={mode === "respond" ? "Paste the message you received..." : "Paste your message here..."}
             disabled={step !== "input"}
             className="flex-1 bg-card border border-border rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
