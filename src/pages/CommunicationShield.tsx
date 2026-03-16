@@ -379,14 +379,6 @@ export default function CommunicationShield() {
             <span className="text-sm text-foreground">Rewrite my message</span>
           </button>
 
-          {step !== "input" && (
-            <button
-              onClick={handleStartOver}
-              className="ml-auto text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Start over
-            </button>
-          )}
         </div>
 
         <div className="flex gap-2">
