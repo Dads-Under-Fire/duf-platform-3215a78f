@@ -9,7 +9,7 @@ export function TopBar() {
     <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-background shrink-0">
       <div className="flex items-center gap-6">
         <SidebarTrigger className="md:hidden text-foreground" />
-        <div className="flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-6">
           <div className="flex items-center gap-1.5">
             <span className="text-primary font-bold text-lg">
               {profile?.message_rewrites_used ?? 0}

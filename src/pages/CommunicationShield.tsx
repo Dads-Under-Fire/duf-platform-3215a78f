@@ -241,9 +241,18 @@ export default function CommunicationShield() {
           </div>
         </div>
 
-        {/* Mode label */}
-        <div className="text-center py-1.5 text-muted-foreground text-xs border-b border-border/50">
-          {mode === "respond" ? "Response Mode" : "Rewrite Mode"}
+        {/* Mode label + Start Over */}
+        <div className="flex items-center justify-between px-4 py-1.5 text-muted-foreground text-xs border-b border-border/50">
+          <span>{mode === "respond" ? "Response Mode" : "Rewrite Mode"}</span>
+          {step !== "input" && (
+            <button
+              onClick={handleStartOver}
+              className="flex items-center gap-1 text-primary text-xs hover:underline"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Start Over
+            </button>
+          )}
         </div>
 
         {/* Scrollable content area */}
