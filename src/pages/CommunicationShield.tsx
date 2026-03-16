@@ -57,24 +57,47 @@ export default function CommunicationShield() {
     setCommunicationContext("");
     setShowOtherInput(false);
     setOtherText("");
-    setLoadingIntents(true);
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-
-      const { data, error } = await supabase.functions.invoke("suggest-intents", {
-        body: { message: msg, mode },
-      });
-      clearTimeout(timeout);
-
-      if (error) throw error;
-      const options = Array.isArray(data?.options) ? data.options.filter((o: unknown) => typeof o === "string" && (o as string).trim()) : [];
-      setIntentOptions(options.length >= 2 ? options : FALLBACK_INTENTS);
-    } catch {
+    // On mobile, show fallback intents immediately; replace if dynamic ones arrive within 3s
+    if (isMobile) {
       setIntentOptions(FALLBACK_INTENTS);
-    } finally {
       setLoadingIntents(false);
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+
+        const { data, error } = await supabase.functions.invoke("suggest-intents", {
+          body: { message: msg, mode },
+        });
+        clearTimeout(timeout);
+
+        if (!error) {
+          const options = Array.isArray(data?.options) ? data.options.filter((o: unknown) => typeof o === "string" && (o as string).trim()) : [];
+          if (options.length >= 2) setIntentOptions(options);
+        }
+      } catch {
+        // Keep fallback intents already shown
+      }
+    } else {
+      setLoadingIntents(true);
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+
+        const { data, error } = await supabase.functions.invoke("suggest-intents", {
+          body: { message: msg, mode },
+        });
+        clearTimeout(timeout);
+
+        if (error) throw error;
+        const options = Array.isArray(data?.options) ? data.options.filter((o: unknown) => typeof o === "string" && (o as string).trim()) : [];
+        setIntentOptions(options.length >= 2 ? options : FALLBACK_INTENTS);
+      } catch {
+        setIntentOptions(FALLBACK_INTENTS);
+      } finally {
+        setLoadingIntents(false);
+      }
     }
   };
 
