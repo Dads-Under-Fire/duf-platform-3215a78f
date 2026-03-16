@@ -57,24 +57,47 @@ export default function CommunicationShield() {
     setCommunicationContext("");
     setShowOtherInput(false);
     setOtherText("");
-    setLoadingIntents(true);
 
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-
-      const { data, error } = await supabase.functions.invoke("suggest-intents", {
-        body: { message: msg, mode },
-      });
-      clearTimeout(timeout);
-
-      if (error) throw error;
-      const options = Array.isArray(data?.options) ? data.options.filter((o: unknown) => typeof o === "string" && (o as string).trim()) : [];
-      setIntentOptions(options.length >= 2 ? options : FALLBACK_INTENTS);
-    } catch {
+    // On mobile, show fallback intents immediately; replace if dynamic ones arrive within 3s
+    if (isMobile) {
       setIntentOptions(FALLBACK_INTENTS);
-    } finally {
       setLoadingIntents(false);
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+
+        const { data, error } = await supabase.functions.invoke("suggest-intents", {
+          body: { message: msg, mode },
+        });
+        clearTimeout(timeout);
+
+        if (!error) {
+          const options = Array.isArray(data?.options) ? data.options.filter((o: unknown) => typeof o === "string" && (o as string).trim()) : [];
+          if (options.length >= 2) setIntentOptions(options);
+        }
+      } catch {
+        // Keep fallback intents already shown
+      }
+    } else {
+      setLoadingIntents(true);
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+
+        const { data, error } = await supabase.functions.invoke("suggest-intents", {
+          body: { message: msg, mode },
+        });
+        clearTimeout(timeout);
+
+        if (error) throw error;
+        const options = Array.isArray(data?.options) ? data.options.filter((o: unknown) => typeof o === "string" && (o as string).trim()) : [];
+        setIntentOptions(options.length >= 2 ? options : FALLBACK_INTENTS);
+      } catch {
+        setIntentOptions(FALLBACK_INTENTS);
+      } finally {
+        setLoadingIntents(false);
+      }
     }
   };
 
@@ -178,7 +201,7 @@ export default function CommunicationShield() {
           </div>
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-auto px-4 py-5 space-y-4">
+          <div className="flex-1 overflow-auto px-4 py-5 space-y-5 pb-24">
             {/* Original message */}
             <div>
               <p className="text-muted-foreground text-sm font-medium mb-1">Original Message:</p>
@@ -187,22 +210,62 @@ export default function CommunicationShield() {
 
             <div className="h-px bg-border" />
 
-            {/* Court-safe response */}
-            <div>
-              <p className="font-semibold text-foreground mb-1">Court-Safe Response:</p>
-              {result ? (
-                <p className="text-foreground text-sm whitespace-pre-wrap">{result.primary_response}</p>
-              ) : loading ? (
-                <div className="flex items-center gap-2 text-muted-foreground text-sm py-4">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Generating response...
+            {loading ? (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm py-8 justify-center">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Generating response...
+              </div>
+            ) : result ? (
+              <>
+                {/* Court-Safe Response */}
+                <div>
+                  <p className="font-semibold text-foreground mb-1">Court-Safe Response:</p>
+                  <p className="text-foreground text-sm whitespace-pre-wrap">{result.primary_response}</p>
                 </div>
-              ) : null}
-            </div>
+
+                <div className="h-px bg-border" />
+
+                {/* Shorter Version */}
+                <div>
+                  <p className="text-muted-foreground text-sm font-medium mb-1">Shorter Version:</p>
+                  <p className="text-foreground text-sm whitespace-pre-wrap">{result.shorter_response}</p>
+                </div>
+
+                <div className="h-px bg-border" />
+
+                {/* Firmer Version */}
+                <div>
+                  <p className="text-muted-foreground text-sm font-medium mb-1">Firmer Version:</p>
+                  <p className="text-foreground text-sm whitespace-pre-wrap">{result.firmer_response}</p>
+                </div>
+
+                <div className="h-px bg-border" />
+
+                {/* Analysis */}
+                <div>
+                  <p className="text-muted-foreground text-sm font-medium mb-1">Tone Assessment:</p>
+                  <p className="text-foreground text-sm">{result.tone_assessment}</p>
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground text-sm font-medium mb-1">Risk Flags:</p>
+                  <ul className="space-y-1">
+                    {result.risk_flags.map((flag, i) => (
+                      <li key={i} className="text-foreground text-sm">• {flag}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground text-sm font-medium mb-1">Why This Is Safer:</p>
+                  <p className="text-foreground text-sm whitespace-pre-wrap">{result.why_this_is_safer}</p>
+                </div>
+              </>
+            ) : null}
           </div>
 
-          {/* Bottom action bar */}
-          <div className="border-t border-border px-4 py-3 flex items-center justify-between">
+          {/* Bottom action bar - fixed */}
+          <div className="border-t border-border px-4 py-3 flex items-center justify-between bg-background">
             <button
               onClick={handleRegenerate}
               disabled={!hasResult || loading}
