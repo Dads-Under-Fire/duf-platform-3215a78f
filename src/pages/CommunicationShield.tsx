@@ -189,8 +189,8 @@ export default function CommunicationShield() {
       // ── Mobile Screen 2: Court-Safe Response ──
       return (
         <div className="flex flex-col h-full">
-          {/* Header with back button */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+          {/* Fixed header with back button */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
             <button
               onClick={handleBackToCompose}
               className="h-9 w-9 rounded-full border border-border flex items-center justify-center text-primary"
@@ -200,12 +200,11 @@ export default function CommunicationShield() {
             <h1 className="text-lg font-semibold text-foreground">Court-Safe Response</h1>
           </div>
 
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-auto px-4 py-5 space-y-5 pb-24">
-            {/* Original message + intent */}
+          {/* Fixed: Original message + intent */}
+          <div className="px-4 pt-4 pb-3 border-b border-border shrink-0 space-y-3">
             <div>
               <p className="text-muted-foreground text-sm font-medium mb-1">Original Message:</p>
-              <p className="text-foreground text-sm whitespace-pre-wrap">{submittedMessage}</p>
+              <p className="text-foreground text-sm whitespace-pre-wrap line-clamp-3">{submittedMessage}</p>
             </div>
 
             {communicationContext && (
@@ -214,9 +213,10 @@ export default function CommunicationShield() {
                 <p className="text-foreground text-sm">{communicationContext}</p>
               </div>
             )}
+          </div>
 
-            <div className="h-px bg-border" />
-
+          {/* Scrollable: Court-safe response content only */}
+          <div className="flex-1 overflow-auto px-4 py-4 space-y-5">
             {loading ? (
               <div className="flex items-center gap-2 text-muted-foreground text-sm py-8 justify-center">
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -224,7 +224,6 @@ export default function CommunicationShield() {
               </div>
             ) : result ? (
               <>
-                {/* Court-Safe Response */}
                 <div>
                   <p className="font-semibold text-foreground mb-1">Court-Safe Response:</p>
                   <p className="text-foreground text-sm whitespace-pre-wrap">{result.primary_response}</p>
@@ -232,7 +231,6 @@ export default function CommunicationShield() {
 
                 <div className="h-px bg-border" />
 
-                {/* Shorter Version */}
                 <div>
                   <p className="text-muted-foreground text-sm font-medium mb-1">Shorter Version:</p>
                   <p className="text-foreground text-sm whitespace-pre-wrap">{result.shorter_response}</p>
@@ -240,7 +238,6 @@ export default function CommunicationShield() {
 
                 <div className="h-px bg-border" />
 
-                {/* Firmer Version */}
                 <div>
                   <p className="text-muted-foreground text-sm font-medium mb-1">Firmer Version:</p>
                   <p className="text-foreground text-sm whitespace-pre-wrap">{result.firmer_response}</p>
@@ -248,7 +245,6 @@ export default function CommunicationShield() {
 
                 <div className="h-px bg-border" />
 
-                {/* Analysis */}
                 <div>
                   <p className="text-muted-foreground text-sm font-medium mb-1">Tone Assessment:</p>
                   <p className="text-foreground text-sm">{result.tone_assessment}</p>
@@ -271,8 +267,8 @@ export default function CommunicationShield() {
             ) : null}
           </div>
 
-          {/* Bottom action bar - fixed */}
-          <div className="border-t border-border px-4 py-3 flex items-center justify-between bg-background">
+          {/* Fixed bottom action bar */}
+          <div className="border-t border-border px-4 py-3 flex items-center justify-between bg-background shrink-0">
             <button
               onClick={handleRegenerate}
               disabled={!hasResult || loading}
@@ -323,6 +319,18 @@ export default function CommunicationShield() {
               Start Over
             </button>
           )}
+        </div>
+
+        {/* Directions strip */}
+        <div className="flex items-center justify-between px-4 py-2 text-xs text-muted-foreground border-b border-border/50 shrink-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-medium text-foreground">Directions:</span>
+            <span>Paste a message</span>
+            <span className="text-primary">→</span>
+            <span>Choose how to respond</span>
+            <span className="text-primary">→</span>
+            <span>Copy the court-safe reply</span>
+          </div>
         </div>
 
         {/* Scrollable content area */}

@@ -1,14 +1,25 @@
 import { useProfile } from "@/hooks/useProfile";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Menu, X } from "lucide-react";
 import { format } from "date-fns";
+import dufLogo from "@/assets/dufplatform.png";
 
 export function TopBar() {
   const { profile } = useProfile();
+  const { openMobile, toggleSidebar } = useSidebar();
+  const isMobile = useIsMobile();
 
   return (
     <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-background shrink-0">
+      {/* Left side */}
       <div className="flex items-center gap-6">
-        <SidebarTrigger className="md:hidden text-foreground" />
+        {/* Mobile: Logo */}
+        {isMobile && (
+          <img src={dufLogo} alt="DUF Platform" className="h-6" />
+        )}
+
+        {/* Desktop: Credits */}
         <div className="hidden md:flex items-center gap-6">
           <div className="flex items-center gap-1.5">
             <span className="text-primary font-bold text-lg">
@@ -33,9 +44,23 @@ export function TopBar() {
           </button>
         </div>
       </div>
-      <span className="text-muted-foreground text-sm hidden sm:block">
-        {format(new Date(), "MMMM d, yyyy h:mma")}
-      </span>
+
+      {/* Right side */}
+      <div className="flex items-center gap-4">
+        <span className="text-muted-foreground text-sm hidden sm:block">
+          {format(new Date(), "MMMM d, yyyy h:mma")}
+        </span>
+
+        {/* Mobile: Hamburger / X toggle */}
+        {isMobile && (
+          <button
+            onClick={toggleSidebar}
+            className="h-10 w-10 flex items-center justify-center text-foreground"
+          >
+            {openMobile ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
