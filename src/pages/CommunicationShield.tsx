@@ -202,11 +202,18 @@ export default function CommunicationShield() {
 
           {/* Scrollable content */}
           <div className="flex-1 overflow-auto px-4 py-5 space-y-5 pb-24">
-            {/* Original message */}
+            {/* Original message + intent */}
             <div>
               <p className="text-muted-foreground text-sm font-medium mb-1">Original Message:</p>
               <p className="text-foreground text-sm whitespace-pre-wrap">{submittedMessage}</p>
             </div>
+
+            {communicationContext && (
+              <div>
+                <p className="text-muted-foreground text-sm font-medium mb-1">Response Intent:</p>
+                <p className="text-foreground text-sm">{communicationContext}</p>
+              </div>
+            )}
 
             <div className="h-px bg-border" />
 
