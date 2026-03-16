@@ -169,19 +169,15 @@ export default function CommunicationShield() {
       {/* Bottom controls */}
       <div className="border-t border-border px-4 lg:px-6 py-4 space-y-3">
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <button onClick={() => setMode("respond")} className="flex items-center gap-2">
             <div className={`h-4 w-4 rounded-full border-2 ${mode === "respond" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
             <span className="text-sm text-foreground">Respond to message</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
+          </button>
+          <button onClick={() => setMode("rewrite")} className="flex items-center gap-2">
             <div className={`h-4 w-4 rounded-full border-2 ${mode === "rewrite" ? "border-primary bg-primary" : "border-muted-foreground"}`} />
             <span className="text-sm text-foreground">Rewrite my message</span>
-          </label>
+          </button>
         </div>
-
-        {/* Hidden radio inputs for actual toggling */}
-        <input type="radio" name="mode" className="hidden" checked={mode === "respond"} onChange={() => setMode("respond")} />
-        <input type="radio" name="mode" className="hidden" checked={mode === "rewrite"} onChange={() => setMode("rewrite")} />
 
         <div className="flex gap-2">
           <input
