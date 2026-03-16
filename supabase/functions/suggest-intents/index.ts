@@ -31,7 +31,13 @@ Analyze the tone, content, and context of the message. Generate intent options t
 
 Always include "General neutral response" as the last option.
 
-Each option should be a short phrase (2-5 words) describing the communication intent. Return exactly 4-6 options.
+If you cannot confidently classify the message or determine relevant intents, return this exact fallback list:
+- "Set a boundary"
+- "Ask for clarification"
+- "Acknowledge without engaging"
+- "General neutral response"
+
+Each option should be a short phrase (2-5 words) describing the communication intent. Return exactly 4-6 options. Never return an empty list.
 
 You MUST respond by calling the provided tool.`;
 

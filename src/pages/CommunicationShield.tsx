@@ -1,17 +1,27 @@
 import { useState } from "react";
-import { ArrowUp, Copy, RefreshCw, Check } from "lucide-react";
+import { ArrowUp, Copy, RefreshCw, Check, MessageSquarePlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/hooks/use-toast";
 
 interface AIResult {
-  rewritten_message: string;
+  primary_response: string;
+  shorter_response: string;
+  firmer_response: string;
   tone_assessment: string;
   risk_flags: string[];
+  why_this_is_safer: string;
 }
 
 type Step = "input" | "select-intent" | "result";
+
+const FALLBACK_INTENTS = [
+  "Set a boundary",
+  "Ask for clarification",
+  "Acknowledge without engaging",
+  "General neutral response",
+];
 
 export default function CommunicationShield() {
   const { user } = useAuth();
@@ -25,6 +35,8 @@ export default function CommunicationShield() {
   const [intentOptions, setIntentOptions] = useState<string[]>([]);
   const [loadingIntents, setLoadingIntents] = useState(false);
   const [communicationContext, setCommunicationContext] = useState("");
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  const [otherText, setOtherText] = useState("");
 
   const handleSubmitMessage = async () => {
     const msg = inputMessage.trim();
@@ -40,6 +52,8 @@ export default function CommunicationShield() {
     setStep("select-intent");
     setResult(null);
     setCommunicationContext("");
+    setShowOtherInput(false);
+    setOtherText("");
     setLoadingIntents(true);
 
     try {
@@ -47,10 +61,11 @@ export default function CommunicationShield() {
         body: { message: msg, mode },
       });
       if (error) throw error;
-      setIntentOptions(data.options ?? []);
-    } catch (err: any) {
+      const options = data.options;
+      setIntentOptions(options?.length ? options : FALLBACK_INTENTS);
+    } catch {
       toast({ title: "Error", description: "Failed to generate options. Using defaults.", variant: "destructive" });
-      setIntentOptions(["Confirm the plan", "Set a boundary", "Ask for clarification", "General neutral response"]);
+      setIntentOptions(FALLBACK_INTENTS);
     } finally {
       setLoadingIntents(false);
     }
@@ -58,6 +73,7 @@ export default function CommunicationShield() {
 
   const handleSelectIntent = async (option: string) => {
     setCommunicationContext(option);
+    setShowOtherInput(false);
     setStep("result");
     setLoading(true);
     setResult(null);
@@ -79,7 +95,7 @@ export default function CommunicationShield() {
       await supabase.from("message_rewrites").insert({
         user_id: user!.id,
         original_message: submittedMessage,
-        rewritten_message: aiResult.rewritten_message,
+        rewritten_message: aiResult.primary_response,
         tone_assessment: aiResult.tone_assessment,
         risk_flags: aiResult.risk_flags,
         mode,
@@ -98,6 +114,11 @@ export default function CommunicationShield() {
     }
   };
 
+  const handleOtherSubmit = () => {
+    const text = otherText.trim();
+    if (text) handleSelectIntent(text);
+  };
+
   const handleRegenerate = () => {
     if (communicationContext && submittedMessage) {
       handleSelectIntent(communicationContext);
@@ -105,9 +126,9 @@ export default function CommunicationShield() {
   };
 
   const copyResult = () => {
-    if (result?.rewritten_message) {
-      navigator.clipboard.writeText(result.rewritten_message);
-      toast({ title: "Copied", description: "Response copied to clipboard." });
+    if (result?.primary_response) {
+      navigator.clipboard.writeText(result.primary_response);
+      toast({ title: "Copied", description: "Primary response copied to clipboard." });
     }
   };
 
@@ -117,6 +138,8 @@ export default function CommunicationShield() {
     setResult(null);
     setCommunicationContext("");
     setIntentOptions([]);
+    setShowOtherInput(false);
+    setOtherText("");
   };
 
   const hasResult = !!result;
@@ -162,7 +185,7 @@ export default function CommunicationShield() {
           {/* Communication Context - only after message submitted */}
           {step !== "input" && (
             <div>
-              <p className="text-sm font-medium text-foreground mb-2">What would you like to communicate?</p>
+              <p className="text-sm font-medium text-foreground mb-2">How would you like to respond?</p>
               {loadingIntents ? (
                 <div className="space-y-2">
                   {[1, 2, 3, 4].map((i) => (
@@ -193,6 +216,42 @@ export default function CommunicationShield() {
                       </button>
                     );
                   })}
+
+                  {/* Other... option */}
+                  {step === "select-intent" && !showOtherInput && (
+                    <button
+                      onClick={() => setShowOtherInput(true)}
+                      className="w-full text-left px-4 py-2.5 rounded-md text-sm transition-colors flex items-center gap-2 bg-card text-foreground hover:bg-secondary"
+                    >
+                      <MessageSquarePlus className="h-4 w-4 shrink-0" />
+                      Other…
+                    </button>
+                  )}
+
+                  {/* Custom intent input */}
+                  {showOtherInput && step === "select-intent" && (
+                    <div className="mt-2 space-y-2">
+                      <label className="text-xs text-muted-foreground">What would you like to communicate?</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={otherText}
+                          onChange={(e) => setOtherText(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleOtherSubmit()}
+                          placeholder="e.g. Decline politely"
+                          className="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleOtherSubmit}
+                          disabled={!otherText.trim()}
+                          className="px-3 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+                        >
+                          Go
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -211,17 +270,11 @@ export default function CommunicationShield() {
             <div className="h-px bg-border mb-3" />
 
             {result ? (
-              <div className="flex-1 space-y-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground mb-1">Suggested Response</p>
-                  <div className="h-px bg-border mb-2" />
-                  <p className="text-foreground whitespace-pre-wrap">{result.rewritten_message}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground mb-1">Tone Assessment</p>
-                  <div className="h-px bg-border mb-2" />
-                  <p className="text-foreground">{result.tone_assessment}</p>
-                </div>
+              <div className="flex-1 space-y-4 text-sm overflow-auto">
+                <ResponseSection label="Primary Response" content={result.primary_response} />
+                <ResponseSection label="Shorter Version" content={result.shorter_response} />
+                <ResponseSection label="Firmer Version" content={result.firmer_response} />
+                <ResponseSection label="Tone Assessment" content={result.tone_assessment} />
                 <div>
                   <p className="text-muted-foreground mb-1">Risk Flags</p>
                   <div className="h-px bg-border mb-2" />
@@ -231,6 +284,7 @@ export default function CommunicationShield() {
                     ))}
                   </ul>
                 </div>
+                <ResponseSection label="Why This Is Safer" content={result.why_this_is_safer} />
               </div>
             ) : loading ? (
               <div className="flex-1 flex items-center justify-center">
@@ -238,22 +292,17 @@ export default function CommunicationShield() {
               </div>
             ) : (
               <div className="flex-1 text-muted-foreground text-sm space-y-4">
-                <div>
-                  <p>Suggested Response</p>
-                  <div className="h-px bg-border my-1" />
-                  <p>[ rewritten message ]</p>
-                </div>
-                <div>
-                  <p>Tone Assessment</p>
-                  <div className="h-px bg-border my-1" />
-                  <p>Neutral / De-escalated</p>
-                </div>
+                <PlaceholderSection label="Primary Response" placeholder="[ primary response ]" />
+                <PlaceholderSection label="Shorter Version" placeholder="[ shorter version ]" />
+                <PlaceholderSection label="Firmer Version" placeholder="[ firmer version ]" />
+                <PlaceholderSection label="Tone Assessment" placeholder="Neutral / De-escalated" />
                 <div>
                   <p>Risk Flags</p>
                   <div className="h-px bg-border my-1" />
                   <p>• Removed accusatory language</p>
                   <p>• Avoided escalation triggers</p>
                 </div>
+                <PlaceholderSection label="Why This Is Safer" placeholder="[ explanation ]" />
               </div>
             )}
 
@@ -321,6 +370,26 @@ export default function CommunicationShield() {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ResponseSection({ label, content }: { label: string; content: string }) {
+  return (
+    <div>
+      <p className="text-muted-foreground mb-1">{label}</p>
+      <div className="h-px bg-border mb-2" />
+      <p className="text-foreground whitespace-pre-wrap">{content}</p>
+    </div>
+  );
+}
+
+function PlaceholderSection({ label, placeholder }: { label: string; placeholder: string }) {
+  return (
+    <div>
+      <p>{label}</p>
+      <div className="h-px bg-border my-1" />
+      <p>{placeholder}</p>
     </div>
   );
 }
