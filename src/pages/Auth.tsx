@@ -42,10 +42,8 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="flex flex-col items-center gap-2">
-          <Flame className="h-10 w-10 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">
-            DUF <span className="text-primary">◆</span> Platform
-          </h1>
+          <img src={dufLogo} alt="DUF Platform" className="h-10" />
+
           <p className="text-muted-foreground text-sm text-center">
             Documentation and communication assistance for custody disputes.
           </p>
