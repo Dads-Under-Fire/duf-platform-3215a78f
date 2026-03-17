@@ -68,7 +68,7 @@ export default function Auth() {
             className="bg-card border-border"
           />
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Loading..." : isLogin ? "Sign" : "Sign Up"}
+            {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
           </Button>
         </form>
 
