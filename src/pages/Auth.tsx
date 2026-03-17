@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
-import { Flame } from "lucide-react";
+import dufLogo from "@/assets/dufplatform.png";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
